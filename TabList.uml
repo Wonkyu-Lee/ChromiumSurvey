@@ -1,6 +1,3 @@
-<details> 
-<summary>Tab List related classes</summary>
-class_diagram_01
 @startuml
 
 interface cc.UIResourceClient {
@@ -40,7 +37,11 @@ interface Layer {
 }
 
 Layer <|-- ContentLayer
-class ContentLayer
+class ContentLayer {
+  SetProperties(id, ...)
+  ComputeSize(id)
+}
+ContentLayer --> TabContentManager : tab_content_manager_
 
 Layer <|-- ToolbarLayer
 class ToolbarLayer
@@ -52,12 +53,17 @@ class TabLayer {
 }
 TabLayer --> ContentLayer : content_layer_
 TabLayer --> ToolbarLayer : toolbar_layer_
+TabLayer --> cc.Layer : layer_, title_
+note "layer {toolbar, close button, title, content, ...}" as note_TabLayer
+TabLayer .. note_TabLayer
 
 class TabListSceneLayer {
-  BeginBuildingFrame();
-  FinishBuildingFrame();
+  BeginBuildingFrame()
+  UpdateLayer()
+  PutTabLayer()
+  FinishBuildingFrame()
 }
-TabListSceneLayer "1" *-- "many" TabLayer
+TabListSceneLayer "1" *-- "many" TabLayer : tab_map_
 
 ThumbnailCacheObserver <|-- TabContentManager
 class TabContentManager {
@@ -70,10 +76,80 @@ class TabContentManager {
 }
 TabContentManager --> ThumbnailCache : thumbnail_cache_
 
+class CompositorView {
+
+}
+
+content.CompositorClient <|-- CompositorView
+content.BrowserChildProcessObserver <|-- CompositorView
+
+interface java.SurfaceHolderCallbackTarget {
+  surfaceRedrawNeededAsync()
+  surfaceChanged()
+  surfaceCreated()
+  surfaceDestroyed()
+}
+
+class java.CompositorView {
+  finalizeLayers()
+}
+note "finalizeLayers() {\n  preload resources\n  nativeSetLayoutBounds\n  retreive sceneLayer\n  nativeSetSceneLayer\n  nativeFinalizeLayers\n}" as note_compositor_view
+java.CompositorView .. note_compositor_view
+java.FrameLayout <|-- java.CompositorView
+java.SurfaceHolderCallbackTarget <|-- java.CompositorView
+
+interface java.LayoutRenderHost {
+  void requestRender()
+  void onCompositorLayout()
+  void didSwapFrame(pendingFrameCount)
+  void onSurfaceCreated()
+  void onSurfaceResized()
+  ResourceManager getResourceManager()
+}
+
+java.CompositorView -- CompositorView : [jni]
+java.CompositorView --> java.LayoutRenderHost : mRenderHost
+
+
+class java.CompositorViewHolder {
+  void onCompositorLayout()
+}
+note bottom: onCompositorLayout() {\n  mCompositorView.finalizeLayers()\n}
+java.FrameLayout <|-- java.CompositorViewHolder
+java.LayoutRenderHost <|-- java.CompositorViewHolder
+java.CompositorViewHolder --> java.CompositorView : mCompositorView
+java.CompositorViewHolder --> java.LayoutManager
+
+interface java.LayoutProvider {
+  Layout getActiveLayout()
+  SceneLayer getUpdatedActiveSceneLayer()
+}
+
+class java.LayoutManager {
+  startShowing(layout, animate)
+  setNextLayout(layout)
+}
+java.LayoutProvider <|-- java.LayoutManager
+java.LayoutManager --> java.Layout : mActiveLayout, mNextActiveLayout
+
+java.Layout *-- java.LayoutTab : mLayoutTabs
+
+class java.LayoutManagerDocument
+java.LayoutManagerChrome <|-- java.LayoutManagerChromeTablet
+java.LayoutManagerChrome <|-- java.LayoutManagerChromePhone
+java.LayoutManagerDocument <|-- java.LayoutManagerChrome
+java.LayoutManager <|-- java.LayoutManagerDocument
+
+
+java.TabListSceneLayer <|-- java.SceneLayer
+java.StaticTabSceneLayer <|-- java.SceneLayer
+java.SceneOverlayLayer <|-- java.SceneLayer
+
+
 class java.TabListSceneLayer {
   pushLayers(Layout layout)
 }
-note left: pushLayers() {\n  beginBuildingFrame()\n  updateLayer()\n  for each Tablayer { putTabLayer() }\n  finishBuildingFrame()\n}
+note right: pushLayers() {\n  nativeBeginBuildingFrame()\n  nativeUpdateLayer()\n  for each LayoutTab { nativePutTabLayer() }\n nativeFinishBuildingFrame()\n}
 java.TabListSceneLayer -- TabListSceneLayer : [jni]
 
 
@@ -90,11 +166,13 @@ java.StackLayout "1" *-- "2" java.Stack
 java.StackLayout --> java.TabListSceneLayer : mSceneLayer
 
 class java.Stack
-java.Stack "1" *-- "many" java.StackTab
+java.Stack "1" *-- "many" java.StackTab : mSortedPriorityArray
 
 class java.StackTab
+java.StackTab --> java.LayoutTab : mLayoutTab
+
+note "correspond to each other" as note_LayoutTab_TabLayer
+java.LayoutTab .. note_LayoutTab_TabLayer
+note_LayoutTab_TabLayer .. TabLayer
 
 @enduml
-
-class_diagram_01
-</details>
