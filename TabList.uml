@@ -1,6 +1,7 @@
 <details> 
 <summary>Tab List related classes</summary>
 class_diagram_02
+
 @startuml
 
 interface cc.UIResourceClient {
@@ -177,8 +178,6 @@ java.StackTab --> java.LayoutTab : mLayoutTab
 note "correspond to each other" as note_LayoutTab_TabLayer
 java.LayoutTab .. note_LayoutTab_TabLayer
 note_LayoutTab_TabLayer .. TabLayer
-
-
 
 @enduml
 
