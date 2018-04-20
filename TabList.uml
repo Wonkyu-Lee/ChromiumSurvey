@@ -1,6 +1,6 @@
 <details> 
 <summary>Tab List related classes</summary>
-class_diagram_01
+class_diagram_02
 @startuml
 
 interface cc.UIResourceClient {
@@ -182,5 +182,5 @@ note_LayoutTab_TabLayer .. TabLayer
 
 @enduml
 
-class_diagram_01
+class_diagram_02
 </details>
