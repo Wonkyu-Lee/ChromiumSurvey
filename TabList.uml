@@ -2,7 +2,7 @@
 <summary>Tab List related classes</summary>
 class_diagram_01
 @startuml
-cc::UIResourceClient <|-- Thumbnail
+UIResourceClient <|-- Thumbnail
 ThumbnailCache <|-- ThumbnailDelegate
 ThumbnailCache "1" *__ "many" ThumbnailCacheObserver : contains
 @enduml
