@@ -2,9 +2,99 @@
 <summary>Tab List related classes</summary>
 class_diagram_01
 @startuml
-UIResourceClient <|-- Thumbnail
-ThumbnailCache <|-- ThumbnailDelegate
-ThumbnailCache "1" *-- "many" ThumbnailCacheObserver : contains
+
+interface cc.UIResourceClient {
+  GetBitmap(uid, resource_lost)
+}
+
+cc.UIResourceClient <|-- Thumbnail
+class Thumbnail {
+  {static} Create(tab_id, thumbnail_delegate)
+  SetBitmap()
+  GetBitmap()
+}
+
+interface ThumbnailDelegate {
+  InvalidateCachedThumbnail(thumbnail)
+}
+
+interface ThumbnailCacheObserver {
+  OnFinishedThumbnailRead(tab_id)
+}
+
+ThumbnailDelegate <|-- ThumbnailCache
+class ThumbnailCache {
+  Thumbnail* Get(tab_id)
+  Put(tab_id, bitmap)
+  Remove(tab_id)
+}
+ThumbnailCache --> ExpringThumbnailCache : cache_
+
+
+class ExpringThumbnailCache
+ExpringThumbnailCache *-- Thumbnail
+
+
+interface Layer {
+  cc.Layer layer()
+}
+
+Layer <|-- ContentLayer
+class ContentLayer
+
+Layer <|-- ToolbarLayer
+class ToolbarLayer
+
+Layer <|-- TabLayer
+class TabLayer {
+  {static} Create(incognito, tab_content_manager)
+  SetProperties(id, ...)
+}
+TabLayer --> ContentLayer : content_layer_
+TabLayer --> ToolbarLayer : toolbar_layer_
+
+class TabListSceneLayer {
+  BeginBuildingFrame();
+  FinishBuildingFrame();
+}
+TabListSceneLayer "1" *-- "many" TabLayer
+
+ThumbnailCacheObserver <|-- TabContentManager
+class TabContentManager {
+  {static} FromJavaObject(jobj)
+  GetLiveLayer()
+  GetStaticLayer()
+  GetOrCreateStaticlayer()
+  AttachLiveLayer()
+  DetachLiveLayer()
+}
+TabContentManager --> ThumbnailCache : thumbnail_cache_
+
+class java.TabListSceneLayer {
+  pushLayers(Layout layout)
+}
+note left: pushLayers() {\n  beginBuildingFrame()\n  updateLayer()\n  for each Tablayer { putTabLayer() }\n  finishBuildingFrame()\n}
+java.TabListSceneLayer -- TabListSceneLayer : [jni]
+
+
+
+class java.TabContentManager
+java.TabContentManager -- TabContentManager : [jni]
+
+
+
+class java.Layout
+class java.StackLayout
+java.Layout <|-- java.StackLayout
+java.StackLayout "1" *-- "2" java.Stack
+java.StackLayout --> java.TabListSceneLayer : mSceneLayer
+
+class java.Stack
+java.Stack "1" *-- "many" java.StackTab
+
+class java.StackTab
+
 @enduml
+
 class_diagram_01
 </details>
