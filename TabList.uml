@@ -4,7 +4,7 @@ class_diagram_01
 @startuml
 UIResourceClient <|-- Thumbnail
 ThumbnailCache <|-- ThumbnailDelegate
-ThumbnailCache "1" *__ "many" ThumbnailCacheObserver : contains
+ThumbnailCache "1" *-- "many" ThumbnailCacheObserver : contains
 @enduml
 class_diagram_01
 </details>
