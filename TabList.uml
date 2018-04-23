@@ -169,6 +169,8 @@ class LayoutManager {
   startShowing(layout, animate)
   setNextLayout(layout)
 }
+note "createLayoutTab(id, ...) {\n  LayoutTab tab = mTabCache.get(id) or new LayoutTab(id);\n}" as note_LayoutManagerDocument
+LayoutManagerDocument .. note_LayoutManagerDocument
 LayoutManager --> Layout : mActiveLayout, mNextActiveLayout
 
 LayoutManager <|-- LayoutManagerDocument
