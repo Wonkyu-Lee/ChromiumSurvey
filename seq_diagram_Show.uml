@@ -1,0 +1,32 @@
+<details>
+<summary>Tab List related classes</summary>
+seq_diagram_Show
+@startuml
+
+CompositorViewHolder -> LayoutManagerDocument : init()
+LayoutManagerDocument -> LayoutManagerDocument : startShowing()
+activate LayoutManagerDocument
+LayoutManagerDocument -> StackLayout : show(time, animate)
+StackLayout -> Stack : show(isStackForCurrentTabModel)
+Stack -> Stack : createStackTabs(restoreState)
+activate Stack
+Stack -> StackLayout : createLayoutTab(tabId, ...)
+StackLayout -> LayoutManagerDocument : createLayoutTab(id, ...)
+
+LayoutManagerDocument -> TabCache : get(id)
+LayoutManagerDocument <-- TabCache : tab
+
+StackLayout <-- LayoutManagerDocument : layoutTab
+
+StackLayout --> Stack : layoutTab
+
+deactivate Stack
+
+StackLayout <-- Stack
+LayoutManagerDocument <-- StackLayout
+deactivate LayoutManagerDocument
+CompositorViewHolder <-- LayoutManagerDocument
+
+@enduml
+seq_diagram_Show
+</details>
