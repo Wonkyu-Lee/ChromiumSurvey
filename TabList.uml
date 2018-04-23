@@ -169,7 +169,8 @@ class LayoutManager {
   startShowing(layout, animate)
   setNextLayout(layout)
 }
-LayoutManager --> Layout : mActiveLayout, mNextActiveLayout
+LayoutManager --> Layout : mActiveLayout
+LayoutManager --> Layout : mNextActiveLayout
 
 LayoutManager <|-- LayoutManagerDocument
 class LayoutManagerDocument {
