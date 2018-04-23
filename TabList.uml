@@ -228,9 +228,6 @@ note "correspond to each other" as note_LayoutTab_TabLayer
 java.LayoutTab .. note_LayoutTab_TabLayer
 note_LayoutTab_TabLayer .. cpp.TabLayer
 
-
-
-
 @enduml
 
 
