@@ -171,7 +171,7 @@ class LayoutManagerDocument {
   startShowing(layout, animate)
   setNextLayout(layout)
 }
-note "createLayoutTab(id, ...) { get from mTabCache or create LayoutTab }" as note_LayoutManagerDocument
+note "createLayoutTab(id, ...) {\n  get from mTabCache.\n  if not exists, create LayoutTab\n}" as note_LayoutManagerDocument
 LayoutManagerDocument .. note_LayoutManagerDocument
 LayoutManagerDocument *--> LayoutTab : mTabCache
 
