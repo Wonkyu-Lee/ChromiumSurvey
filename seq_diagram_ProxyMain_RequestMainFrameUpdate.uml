@@ -1,0 +1,37 @@
+<details>
+<summary>Tab List related classes</summary>
+seq_diagram_ProxyMain_RequestMainFrameUpdate
+@startuml
+
+native.ProxyMain -> native.LayerTreeHost : RequestMainFrameUpdate()
+native.LayerTreeHost -> native.CompositorImpl : UpdateLayerTreeHost()
+native.CompositorImpl -> native.CompositorView : UpdateLayerTreeHost()
+native.CompositorView -> CompositorViewHolder : onCompositorLayout()
+CompositorViewHolder -> CompositorView : finalizeLayers
+CompositorView -> LayoutManagerChromePhone : getActiveLayout()
+CompositorView <-- LayoutManagerChromePhone : layout
+CompositorView -> native.CompositorView : SetlayoutBounds()
+CompositorView -> LayoutManagerChromePhone : getUpdatedActiveSceneLayer()
+LayoutManagerChromePhone -> Layout : getUpdatedActiveSceneLayer()
+Layout -> Layout : updateSceneLayer()
+Layout -> Layout : content = getSceneLayer()
+Layout -> Layout : for each overlay layers
+activate Layout
+Layout -> SceneOverlayLayer : setContentTree(content)
+deactivate Layout
+LayoutManagerChromePhone <-- Layout : sceneLayer
+CompositorView <-- LayoutManagerChromePhone : sceneLayer
+CompositorView -> native.CompositorView : SetSceneLayer(sceneLayer)
+CompositorView -> native.CompositorView : FinalizeLayers
+CompositorViewHolder <-- CompositorView
+native.CompositorView <-- CompositorViewHolder
+native.CompositorImpl <-- native.CompositorView
+native.LayerTreeHost <-- native.CompositorImpl
+native.ProxyMain <-- native.LayerTreeHost
+
+LayoutManagerChromePhone --> LayoutManagerChromePhone : tabCreating()
+LayoutManagerChromePhone --> LayoutManagerChromePhone : startShowing(mSimpleAnimationLayout)
+
+@enduml
+seq_diagram_ProxyMain_RequestMainFrameUpdate
+</details>
