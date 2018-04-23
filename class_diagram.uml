@@ -1,0 +1,266 @@
+<details>
+<summary>Tab List related classes</summary>
+class_diagram
+
+@startuml
+
+namespace cpp {
+
+/'
+interface content.Compositor {
+  {static} Compositor* Create(CompositorClient* client)
+}
+content.Compositor --> content.CompositorClient
+
+interface content.CompositorClient {
+  UpdatelayerTreeHost()
+  DidSwapFrame()
+  DidSwapBuffers()
+}
+
+content.CompositorClient <|.. CompositorView
+content.BrowserChildProcessObserver <|.. CompositorView
+CompositorView *--> content.Compositor : compositor_
+'/
+
+class CompositorView {
+  SetNeedsComposite()
+  FinalizeLayers()
+  SetlayoutBounds()
+  SurfaceCreated()
+  surfaceDestroyed()
+  surfaceChanged()
+  SetSceneLayer()
+}
+CompositorView --> TabContentManager : tab_content_manager_
+CompositorView --> SceneLayer : scene_layer_
+
+ThumbnailCacheObserver <|.. TabContentManager
+class TabContentManager {
+  {static} FromJavaObject(jobj)
+  GetLiveLayer()
+  GetStaticLayer()
+  GetOrCreateStaticlayer()
+  AttachLiveLayer()
+  DetachLiveLayer()
+}
+TabContentManager --> ThumbnailCache : thumbnail_cache_
+
+SceneLayer <|-- TabListSceneLayer
+class TabListSceneLayer {
+  BeginBuildingFrame()
+  UpdateLayer()
+  PutTabLayer()
+  FinishBuildingFrame()
+}
+TabListSceneLayer o-- TabLayer : tab_map_
+
+SceneLayer <|-- StaticTabSceneLayer
+
+class TabLayer {
+  {static} Create(incognito, tab_content_manager)
+  SetProperties(id, ...)
+}
+note "layer {toolbar, close button, title, content, ...}" as note_TabLayer
+TabLayer .. note_TabLayer
+TabLayer --> ContentLayer : content_layer_
+TabLayer --> ToolbarLayer : toolbar_layer_
+
+class ContentLayer {
+  SetProperties(id, ...)
+  ComputeSize(id)
+}
+ContentLayer --> TabContentManager : tab_content_manager_
+
+ThumbnailDelegate <|.. ThumbnailCache
+class ThumbnailCache {
+  Thumbnail* Get(tab_id)
+  Put(tab_id, bitmap)
+  Remove(tab_id)
+}
+ThumbnailCache *--> Thumbnail : cache_
+ThumbnailCache *--> ThumbnailCacheObserver : observers_
+
+class Thumbnail {
+  {static} Create(tab_id, thumbnail_delegate)
+  SetBitmap()
+  GetBitmap()
+}
+Thumbnail --> ThumbnailDelegate : thumbnail_delegate_
+
+/'
+Layer <|.. TabLayer
+Layer <|.. ContentLayer
+Layer <|.. ToolbarLayer
+interface Layer {
+  cc.Layer layer()
+}
+
+TabLayer --> cc.Layer : layer_, title_
+cc.UIResourceClient <|.. Thumbnail
+
+interface cc.UIResourceClient {
+  GetBitmap(uid, resource_lost)
+}
+'/
+
+interface ThumbnailDelegate {
+  InvalidateCachedThumbnail(thumbnail)
+}
+
+interface ThumbnailCacheObserver {
+  OnFinishedThumbnailRead(tab_id)
+}
+
+} /' namespace cpp '/
+
+
+
+namespace java {
+
+FrameLayout <|-- CompositorViewHolder
+LayoutRenderHost <|-- CompositorViewHolder
+class CompositorViewHolder {
+  void onCompositorLayout()
+}
+note "onCompositorLayout() {\n  mCompositorView.finalizeLayers(mLayoutManager)\n}" as note_CompositorViewHolder
+CompositorViewHolder .. note_CompositorViewHolder
+CompositorViewHolder --> CompositorView : mCompositorView
+CompositorViewHolder --> LayoutManager : mLayoutManager
+
+FrameLayout <|-- CompositorView
+class CompositorView {
+  surfaceRedrawNeededAsync()
+  surfaceChanged()
+  surfaceCreated()
+  surfaceDestroyed()
+  finalizeLayers(layoutProvider)
+}
+note "finalizeLayers(layoutProvider) {\n  preload resources\n  nativeSetLayoutBounds\n  retreive sceneLayer\n  nativeSetSceneLayer\n  nativeFinalizeLayers\n}" as note_CompositorView
+CompositorView .. note_CompositorView
+CompositorView --> LayoutRenderHost : mRenderHost
+CompositorView --> TabContentManager : mTabContentManager
+CompositorView --> LayoutProvider
+
+interface LayoutRenderHost {
+  void requestRender()
+  void onCompositorLayout()
+  void didSwapFrame(pendingFrameCount)
+  void onSurfaceCreated()
+  void onSurfaceResized()
+  ResourceManager getResourceManager()
+}
+
+interface LayoutProvider {
+  Layout getActiveLayout()
+  SceneLayer getUpdatedActiveSceneLayer()
+}
+
+LayoutProvider <|-- LayoutManager
+class LayoutManager {
+  LayoutTab createLayoutTab(id, incognito, ...)
+  startShowing(layout, animate)
+  setNextLayout(layout)
+}
+LayoutManager --> Layout : mActiveLayout, mNextActiveLayout
+
+LayoutManager <|-- LayoutManagerDocument
+class LayoutManagerDocument {
+  LayoutTab createLayoutTab(id, incognito, ...)
+  startShowing(layout, animate)
+  setNextLayout(layout)
+}
+note "createLayoutTab(id, ...) {\n  get from mTabCache\n  if not exists, create a new LayoutTab\n}" as note_LayoutManagerDocument
+LayoutManagerDocument .. note_LayoutManagerDocument
+LayoutManagerDocument *--> LayoutTab : mTabCache
+
+class Layout {
+  LayoutTab createLayoutTab(id, isIncognito, ...)
+  addSceneOverlay(SceneOverlay helper)
+  onTabSelected()
+  onTabClosing()
+  onTabClosed()
+  onTabCreating()
+  onTabCreated()
+  updateLayout()
+}
+Layout o--> LayoutTab : mLayoutTabs
+Layout o--> SceneOverlay : mSceneOverlays
+
+interface SceneOverlay {
+  SceneOverlayLayer getUpdateSceneOverlayTree()
+  boolean updateOverlay(time, dt)
+  tabSwitched()
+  tabSelected()
+  tabMoved()
+  tabClosed()
+}
+SceneOverlay --> SceneOverlayLayer
+
+/'
+LayoutManagerDocument <|-- LayoutManagerChrome
+LayoutManagerChrome <|-- LayoutManagerChromeTablet
+LayoutManagerChrome <|-- LayoutManagerChromePhone
+'/
+
+TabListSceneLayer <|-- SceneLayer
+StaticTabSceneLayer <|-- SceneLayer
+SceneOverlayLayer <|-- SceneLayer
+
+class TabListSceneLayer {
+  pushLayers(Layout layout)
+}
+note "pushLayers() {\n  nativeBeginBuildingFrame()\n  nativeUpdateLayer()\n  for each LayoutTab { nativePutTabLayer() }\n nativeFinishBuildingFrame()\n}" as note_TabListSceneLayer
+TabListSceneLayer .. note_TabListSceneLayer
+
+class TabContentManager {
+  cacheTabThumbnail(Tab tab)
+  getThumbnailForId(tabId)
+  invalidateifChanged(tabId, url)
+  invalidateTabThumbnail(id, url)
+}
+
+Layout <|-- StaticLayout
+class StaticLayout {
+  updateLayout(time, dt)
+}
+note "shows a single tab at full screen" as note_StaticLayout
+StaticLayout .. note_StaticLayout
+StaticLayout --> StaticTabSceneLayer : mSceneLayer
+
+Layout <|-- StackLayout
+class StackLayout {
+  updateLayout(time, dt)
+}
+note "updateLayout(time, dt) {\n  mLayoutTabs = new LayoutTab[tabVisibleCount]\n  for each LayoutTab { layoutTab.updateSnap(dt) }\n}" as note_StackLayout
+StackLayout .. note_StackLayout
+StackLayout "1" *--> "2" Stack
+StackLayout --> TabListSceneLayer : mSceneLayer
+
+class Stack
+Stack "1" *--> "many" StackTab : mSortedPriorityArray
+
+class StackTab
+StackTab --> LayoutTab : mLayoutTab
+
+} /' namespace java '/
+
+
+/'
+note "correspond to each other" as note_LayoutTab_TabLayer
+java.LayoutTab .. note_LayoutTab_TabLayer
+note_LayoutTab_TabLayer .. cpp.TabLayer
+
+java.CompositorView .. cpp.CompositorView : [jni]
+java.SceneLayer .. cpp.SceneLayer : [jni]
+java.StaticTabSceneLayer .. cpp.StaticTabSceneLayer : [jni]
+java.TabListSceneLayer .. cpp.TabListSceneLayer : [jni]
+java.TabContentManager .. cpp.TabContentManager : [jni]
+'/
+
+@enduml
+
+
+
+class_diagram
+</details>
