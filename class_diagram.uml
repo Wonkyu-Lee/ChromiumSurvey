@@ -257,7 +257,9 @@ SceneOverlay <|.. ScrollingBottomViewSceneLayer
 
 class SceneLayer << jni >>
 class StaticTabSceneLayer << jni >>
-abstract class SceneOverlayLayer
+abstract class SceneOverlayLayer {
+  {abstract} setContentTree(SceneLayer contentTree)
+}
 
 class ContextualSearchSceneLayer << jni >>
 class ToolbarSceneLayer << jni >>
