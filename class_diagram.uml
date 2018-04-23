@@ -23,7 +23,7 @@ content.BrowserChildProcessObserver <|.. CompositorView
 CompositorView *--> content.Compositor : compositor_
 '/
 
-class CompositorView {
+class CompositorView << jni >>{
   SetNeedsComposite()
   FinalizeLayers()
   SetlayoutBounds()
@@ -47,7 +47,7 @@ class TabContentManager {
 TabContentManager --> ThumbnailCache : thumbnail_cache_
 
 SceneLayer <|-- TabListSceneLayer
-class TabListSceneLayer {
+class TabListSceneLayer << jni >> {
   BeginBuildingFrame()
   UpdateLayer()
   PutTabLayer()
@@ -56,6 +56,9 @@ class TabListSceneLayer {
 TabListSceneLayer o-- TabLayer : tab_map_
 
 SceneLayer <|-- StaticTabSceneLayer
+class StaticTabSceneLayer << jni >>
+
+class SceneLayer << jni >>
 
 class TabLayer {
   {static} Create(incognito, tab_content_manager)
@@ -129,7 +132,7 @@ CompositorViewHolder --> CompositorView : mCompositorView
 CompositorViewHolder --> LayoutManager : mLayoutManager
 
 FrameLayout <|-- CompositorView
-class CompositorView {
+class CompositorView << jni >> {
   surfaceRedrawNeededAsync()
   surfaceChanged()
   surfaceCreated()
@@ -188,7 +191,7 @@ Layout o--> LayoutTab : mLayoutTabs
 Layout o--> SceneOverlay : mSceneOverlays
 
 interface SceneOverlay {
-  SceneOverlayLayer getUpdateSceneOverlayTree()
+  SceneOverlayLayer getUpdatedSceneOverlayTree()
   boolean updateOverlay(time, dt)
   tabSwitched()
   tabSelected()
@@ -197,23 +200,24 @@ interface SceneOverlay {
 }
 SceneOverlay --> SceneOverlayLayer
 
-/'
 LayoutManagerDocument <|-- LayoutManagerChrome
-LayoutManagerChrome <|-- LayoutManagerChromeTablet
+LayoutManagerChrome --> StackLayout : mOverviewLayout
+
 LayoutManagerChrome <|-- LayoutManagerChromePhone
+LayoutManagerChromePhone --> SimpleAnimationLayout : mSimpleAnimationLayout
+
+/'
+LayoutManagerChrome <|-- LayoutManagerChromeTablet
 '/
 
-TabListSceneLayer <|-- SceneLayer
-StaticTabSceneLayer <|-- SceneLayer
-SceneOverlayLayer <|-- SceneLayer
-
-class TabListSceneLayer {
+SceneLayer <|-- TabListSceneLayer 
+class TabListSceneLayer << jni >> {
   pushLayers(Layout layout)
 }
 note "pushLayers() {\n  nativeBeginBuildingFrame()\n  nativeUpdateLayer()\n  for each LayoutTab { nativePutTabLayer() }\n nativeFinishBuildingFrame()\n}" as note_TabListSceneLayer
 TabListSceneLayer .. note_TabListSceneLayer
 
-class TabContentManager {
+class TabContentManager << jni >> {
   cacheTabThumbnail(Tab tab)
   getThumbnailForId(tabId)
   invalidateifChanged(tabId, url)
@@ -221,17 +225,12 @@ class TabContentManager {
 }
 
 Layout <|-- StaticLayout
-class StaticLayout {
-  updateLayout(time, dt)
-}
+
 note "shows a single tab at full screen" as note_StaticLayout
 StaticLayout .. note_StaticLayout
 StaticLayout --> StaticTabSceneLayer : mSceneLayer
 
 Layout <|-- StackLayout
-class StackLayout {
-  updateLayout(time, dt)
-}
 note "updateLayout(time, dt) {\n  mLayoutTabs = new LayoutTab[tabVisibleCount]\n  for each LayoutTab { layoutTab.updateSnap(dt) }\n}" as note_StackLayout
 StackLayout .. note_StackLayout
 StackLayout "1" *--> "2" Stack
@@ -242,6 +241,30 @@ Stack "1" *--> "many" StackTab : mSortedPriorityArray
 
 class StackTab
 StackTab --> LayoutTab : mLayoutTab
+
+Layout <|-- SimpleAnimationLayout
+
+
+SceneLayer <|-- StaticTabSceneLayer
+SceneLayer <|-- SceneOverlayLayer
+SceneOverlayLayer <|-- ContextualSearchSceneLayer
+SceneOverlayLayer <|-- ToolbarSceneLayer
+SceneOverlayLayer <|-- TabStripeSceneLayer
+SceneOverlayLayer <|-- ScrollingBottomViewSceneLayer
+
+SceneOverlay <|.. ToolbarSceneLayer
+SceneOverlay <|.. ScrollingBottomViewSceneLayer
+
+class SceneLayer << jni >>
+class StaticTabSceneLayer << jni >>
+abstract class SceneOverlayLayer
+
+class ContextualSearchSceneLayer << jni >>
+class ToolbarSceneLayer << jni >>
+class TabStripeSceneLayer << jni >>
+class ScrollingBottomViewSceneLayer << jni >>
+
+
 
 } /' namespace java '/
 
