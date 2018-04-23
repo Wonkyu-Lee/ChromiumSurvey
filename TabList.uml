@@ -177,10 +177,6 @@ class LayoutManagerDocument {
   startShowing(layout, animate)
   setNextLayout(layout)
 }
-/'
-note "createLayoutTab(id, ...) {\n  LayoutTab tab = mTabCache.get(id) or new LayoutTab(id);\n}" as note_LayoutManagerDocument
-LayoutManagerDocument .. note_LayoutManagerDocument
-'/
 LayoutManagerDocument *--> LayoutTab : mTabCache
 
 class Layout {
