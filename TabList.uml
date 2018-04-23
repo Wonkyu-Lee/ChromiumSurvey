@@ -34,7 +34,6 @@ class CompositorView {
 }
 CompositorView --> TabContentManager : tab_content_manager_
 CompositorView --> SceneLayer : scene_layer_
-CompositorView --> LayoutProvider
 
 ThumbnailCacheObserver <|.. TabContentManager
 class TabContentManager {
@@ -55,6 +54,8 @@ class TabListSceneLayer {
   FinishBuildingFrame()
 }
 TabListSceneLayer o-- TabLayer : tab_map_
+
+SceneLayer <|-- StaticTabSceneLayer
 
 class TabLayer {
   {static} Create(incognito, tab_content_manager)
@@ -111,14 +112,7 @@ interface ThumbnailCacheObserver {
   OnFinishedThumbnailRead(tab_id)
 }
 
-
 } /' namespace cpp '/
-
-
-
-
-
-
 
 
 
@@ -169,8 +163,6 @@ class LayoutManager {
   startShowing(layout, animate)
   setNextLayout(layout)
 }
-note "createLayoutTab(id, ...) {\n  LayoutTab tab = mTabCache.get(id) or new LayoutTab(id);\n}" as note_LayoutManagerDocument
-LayoutManagerDocument .. note_LayoutManagerDocument
 LayoutManager --> Layout : mActiveLayout, mNextActiveLayout
 
 LayoutManager <|-- LayoutManagerDocument
@@ -179,12 +171,32 @@ class LayoutManagerDocument {
   startShowing(layout, animate)
   setNextLayout(layout)
 }
+note "createLayoutTab(id, ...) {\n  LayoutTab tab = mTabCache.get(id) or new LayoutTab(id)\n}" as note_LayoutManagerDocument
+LayoutManagerDocument .. note_LayoutManagerDocument
 LayoutManagerDocument *--> LayoutTab : mTabCache
 
 class Layout {
   LayoutTab createLayoutTab(id, isIncognito, ...)
+  addSceneOverlay(SceneOverlay helper)
+  onTabSelected()
+  onTabClosing()
+  onTabClosed()
+  onTabCreating()
+  onTabCreated()
+  updateLayout()
 }
 Layout o--> LayoutTab : mLayoutTabs
+Layout o--> SceneOverlay : mSceneOverlays
+
+interface SceneOverlay {
+  SceneOverlayLayer getUpdateSceneOverlayTree()
+  boolean updateOverlay(time, dt)
+  tabSwitched()
+  tabSelected()
+  tabMoved()
+  tabClosed()
+}
+SceneOverlay --> SceneOverlayLayer
 
 /'
 LayoutManagerDocument <|-- LayoutManagerChrome
@@ -195,6 +207,8 @@ LayoutManagerChrome <|-- LayoutManagerChromePhone
 TabListSceneLayer <|-- SceneLayer
 StaticTabSceneLayer <|-- SceneLayer
 SceneOverlayLayer <|-- SceneLayer
+SceneLayer .. cpp.SceneLayer : [jni]
+StaticTabSceneLayer .. cpp.StaticTabSceneLayer : [jni]
 
 class TabListSceneLayer {
   pushLayers(Layout layout)
@@ -211,24 +225,39 @@ class TabContentManager {
 }
 TabContentManager .. cpp.TabContentManager : [jni]
 
+Layout <|-- StaticLayout
+class StaticLayout {
+  updateLayout(time, dt)
+}
+note "shows a single tab at full screen" as note_StaticLayout
+StaticLayout .. note_StaticLayout
+StaticLayout --> StaticTabSceneLayer : mSceneLayer
+
 Layout <|-- StackLayout
-class StackLayout
-StackLayout "1" *-- "2" Stack
+class StackLayout {
+  updateLayout(time, dt)
+}
+note "updateLayout(time, dt) {\n  mLayoutTabs = new LayoutTab[tabVisibleCount]\n  for each LayoutTab { layoutTab.updateSnap(dt) }\n}" as note_StackLayout
+StackLayout .. note_StackLayout
+StackLayout "1" *--> "2" Stack
 StackLayout --> TabListSceneLayer : mSceneLayer
 
 class Stack
-Stack "1" *-- "many" StackTab : mSortedPriorityArray
+Stack "1" *--> "many" StackTab : mSortedPriorityArray
 
 class StackTab
 StackTab --> LayoutTab : mLayoutTab
 
 } /' namespace java '/
 
+
+
 note "correspond to each other" as note_LayoutTab_TabLayer
 java.LayoutTab .. note_LayoutTab_TabLayer
 note_LayoutTab_TabLayer .. cpp.TabLayer
 
 @enduml
+
 
 
 class_diagram_02
