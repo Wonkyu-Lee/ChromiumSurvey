@@ -1,5 +1,5 @@
 <details>
-<summary>Tab List related classes</summary>
+<summary>Sequence diagram for ProxyMain.RequestMainFrameUpdate()</summary>
 seq_diagram_ProxyMain_RequestMainFrameUpdate
 @startuml
 
