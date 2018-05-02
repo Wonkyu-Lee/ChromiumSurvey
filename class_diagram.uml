@@ -238,12 +238,20 @@ StackLayout --> TabListSceneLayer : mSceneLayer
 
 class Stack
 Stack "1" *--> "many" StackTab : mSortedPriorityArray
+Stack --> StackAnimation : mStackAnimationFactory
 
 class StackTab
 StackTab --> LayoutTab : mLayoutTab
 
-Layout <|-- SimpleAnimationLayout
+class StackAnimation {
+  StackAnimation createAnimationFactory(stack, width, height, ..., orientation)
+  ChromeAnimation createAnimatorSetForType(animationType, tabs)
+}
+StackAnimation <|-- StackAnimationPortrait 
+StackAnimation <|-- StackAnimationLandscape
 
+
+Layout <|-- SimpleAnimationLayout
 
 SceneLayer <|-- StaticTabSceneLayer
 SceneLayer <|-- SceneOverlayLayer

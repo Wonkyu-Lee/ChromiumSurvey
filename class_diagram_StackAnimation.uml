@@ -1,0 +1,12 @@
+<details>
+<summary>Stack related classes</summary>
+class_diagram_StackAnimation
+@startuml
+
+class StackAnimation {
+	
+}
+
+@enduml
+class_diagram_StackAnimation
+</details>
