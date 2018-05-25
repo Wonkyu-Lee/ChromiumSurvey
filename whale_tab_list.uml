@@ -1,0 +1,133 @@
+<details>
+<summary>Whale Tab List related classes</summary>
+whale_tab_list
+@startuml
+/'-----start-----'/
+
+class Tab {
+  void addObserver(TabObserver)
+}
+Tab --> TabObserver
+
+interface TabObserver {
+  void onShown(Tab tab)
+  void onHidden(Tab tab)
+  void onContentChanged(Tab tab)
+  void onLoadUrl(Tab tab, LoadUrlParams params, int loadType)
+}
+
+interface TabList {
+  boolean isIncognito()
+  int index()
+  int getCount()
+  Tab getTabAt(int index)
+  indexOf(Tab tab)
+}
+TabList --> Tab
+
+TabList <|-- TabModel
+interface TabModel {
+  boolean closeTab(Tab tab)
+  void addTab()
+  void removeTab()
+  void addObserver(TabModelObserver observer)
+}
+TabModel --> TabModelObserver
+interface TabModelObserver {
+  void didSelectTab(Tab tab, TabSelectionType type, int lastId)
+  void willCloseTab)tab tab, boolean animate)
+  void didCloseTab(int tabId, boolean incognito)
+  void willAddtab(Tab tab, TabLaunchTape type)
+}
+
+TabModel <|.. TabModelJniBridge
+abstract class TabModelJniBridge {
+  TabCreator getTabCreator(boolean incognito)
+}
+TabModelJniBridge --> TabCreator
+
+TabModelJniBridge <|-- TabModelImpl
+class TabModelImpl {
+  TabCreator getTabCreator(boolean incognito)
+  void addObserver(TabModelObserver observer)
+}
+TabModelImpl o..> TabCreator: mRegularTabCreator, mIncognitoTabCreator
+
+TabModel <|.. IncognitoTabModel
+IncognitoTabModel --> TabModel: mDelegateModel
+
+
+TabModelSelector <|.. TabModelSelectorBase
+abstract class TabModelSelectorBase
+TabModelSelectorBase <|-- TabModelSelectorImpl
+TabModelSelectorImpl ..> TabModelImpl: normlModel, incognitoModel
+
+interface TabModelSelector {
+  void selectModel(boolean incognito)
+  TabModel getModel(boolean incognito)
+  List<TabModel> getModels()
+  TabModel getModelAt(int index)
+  TabModel getCurrentModel()
+  Tab getCurrentTab()
+  int getCurrentTabId()
+}
+TabModelSelector o--> TabModel
+
+
+interface TabModelObserver
+
+
+
+/'
+interface OverViewModeObserver {
+  void onOverviewModeStartedShowing(boolean showToolbar);
+  void onOverviewModeFinishedShowing();
+  void onOverviewModeStartedHiding(boolean showToolbar, boolean delayAnimation);
+  void onOverviewModeFinishedHiding();
+}
+OverViewModeObserver<|.. ChromeTabbedActivity
+'/
+
+class ChromeActivity {
+  TabModelSelector getTabModelSelector()
+}
+ChromeActivity --> TabModelSelector
+
+ChromeActivity <|-- ChromeTabbedActivity
+class ChromeTabbedActivity {
+  TabModelSelector createTabModelSelector()
+  TabModelSelector getTabModelSelector()
+}
+ChromeTabbedActivity ..> TabModelSelectorImpl: mTabModelSelectorImpl
+ChromeTabbedActivity ..> FullPageOpenTabManager
+ChromeTabbedActivity ..> LayoutManagerChrome
+
+class ChromeTabCreator
+ChromeTabCreator <|-- TabbedModeTabCreator
+
+interface TabModelSelectorObserver {
+  void onChange()
+  void onNewTabCreated(Tab tab)
+  void onTabModelSelected(TabModel newModel, TabModel oldModel)
+  void onTabStateInitialized()
+}
+TabModelSelectorObserver <|.. EmptyTabModelSelectorObserver
+
+
+/'--Whale Stuffs--'/
+Fragment <|-- FullPageOpenTab
+FullPageOpenTab ..> FullPageOpenTabView
+FullPageOpenTabView o--> ScrollCard: mScrollCards
+
+class FullPageOpenTabManager {
+  void showFullPageOpenTab()
+  void closeFullPageOpenTab()
+}
+FullPageOpenTabManager ..> FullPageOpenTab
+FullPageOpenTabManager --> TabModelSelector
+
+
+/'-----end-----'/
+@enduml
+whale_tab_list
+</details>
