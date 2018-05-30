@@ -1,0 +1,312 @@
+<details>
+<summary>Tab List related classes</summary>
+class_diagram
+
+@startuml
+
+FrameLayout <|-- CompositorViewHolder
+LayoutRenderHost <|-- CompositorViewHolder
+class CompositorViewHolder {
+  void onCompositorLayout()
+}
+note "onCompositorLayout() {\n  mCompositorView.finalizeLayers(mLayoutManager)\n}" as note_CompositorViewHolder
+CompositorViewHolder .. note_CompositorViewHolder
+CompositorViewHolder --> CompositorView : mCompositorView
+CompositorViewHolder --> LayoutManager : mLayoutManager
+
+FrameLayout <|-- CompositorView
+class CompositorView << jni >> {
+  surfaceRedrawNeededAsync()
+  surfaceChanged()
+  surfaceCreated()
+  surfaceDestroyed()
+  finalizeLayers(layoutProvider)
+}
+note "finalizeLayers(layoutProvider) {\n  preload resources\n  nativeSetLayoutBounds\n  retreive sceneLayer\n  nativeSetSceneLayer\n  nativeFinalizeLayers\n}" as note_CompositorView
+CompositorView .. note_CompositorView
+CompositorView --> LayoutRenderHost : mRenderHost
+CompositorView --> TabContentManager : mTabContentManager
+CompositorView --> LayoutProvider
+
+interface LayoutRenderHost {
+  void requestRender()
+  void onCompositorLayout()
+  void didSwapFrame(pendingFrameCount)
+  void onSurfaceCreated()
+  void onSurfaceResized()
+  ResourceManager getResourceManager()
+}
+
+interface LayoutProvider {
+  Layout getActiveLayout()
+  SceneLayer getUpdatedActiveSceneLayer()
+}
+
+LayoutProvider <|-- LayoutManager
+class LayoutManager {
+  init(TabModelSelector selector, TabCreatorManager creator, TabContentManager content, ...)
+  LayoutTab createLayoutTab(id, incognito, ...)
+  startShowing(layout, animate)
+  setNextLayout(layout)
+}
+LayoutManager --> TabModelSelector: mTabModelSelector
+LayoutManager --> Layout : mActiveLayout, mNextActiveLayout
+
+LayoutManager <|-- LayoutManagerDocument
+class LayoutManagerDocument {
+  LayoutTab createLayoutTab(id, incognito, ...)
+  startShowing(layout, animate)
+  setNextLayout(layout)
+}
+note "createLayoutTab(id, ...) {\n  get from mTabCache\n  if not exists, create a new LayoutTab\n}" as note_LayoutManagerDocument
+LayoutManagerDocument .. note_LayoutManagerDocument
+LayoutManagerDocument *--> LayoutTab : mTabCache
+
+class Layout {
+  LayoutTab createLayoutTab(id, isIncognito, ...)
+  addSceneOverlay(SceneOverlay helper)
+  onTabSelected()
+  onTabClosing()
+  onTabClosed()
+  onTabCreating()
+  onTabCreated()
+  updateLayout()
+}
+Layout o--> LayoutTab : mLayoutTabs
+Layout o--> SceneOverlay : mSceneOverlays
+
+interface SceneOverlay {
+  SceneOverlayLayer getUpdatedSceneOverlayTree()
+  boolean updateOverlay(time, dt)
+  tabSwitched()
+  tabSelected()
+  tabMoved()
+  tabClosed()
+}
+SceneOverlay --> SceneOverlayLayer
+
+LayoutManagerDocument <|-- LayoutManagerChrome
+LayoutManagerChrome --> StackLayout : mOverviewLayout
+
+LayoutManagerChrome <|-- LayoutManagerChromePhone
+LayoutManagerChromePhone --> SimpleAnimationLayout : mSimpleAnimationLayout
+
+/'
+LayoutManagerChrome <|-- LayoutManagerChromeTablet
+'/
+
+SceneLayer <|-- TabListSceneLayer
+class TabListSceneLayer << jni >> {
+  pushLayers(Layout layout)
+}
+note "pushLayers() {\n  nativeBeginBuildingFrame()\n  nativeUpdateLayer()\n  for each LayoutTab { nativePutTabLayer() }\n nativeFinishBuildingFrame()\n}" as note_TabListSceneLayer
+TabListSceneLayer .. note_TabListSceneLayer
+
+class TabContentManager << jni >> {
+  cacheTabThumbnail(Tab tab)
+  getThumbnailForId(tabId)
+  invalidateifChanged(tabId, url)
+  invalidateTabThumbnail(id, url)
+}
+
+Layout <|-- StaticLayout
+
+note "shows a single tab at full screen" as note_StaticLayout
+StaticLayout .. note_StaticLayout
+StaticLayout --> StaticTabSceneLayer : mSceneLayer
+
+Layout <|-- StackLayout
+note "updateLayout(time, dt) {\n  mLayoutTabs = new LayoutTab[tabVisibleCount]\n  for each LayoutTab { layoutTab.updateSnap(dt) }\n}" as note_StackLayout
+StackLayout .. note_StackLayout
+StackLayout "1" *--> "2" Stack
+StackLayout --> TabListSceneLayer : mSceneLayer
+
+class Stack
+Stack "1" *--> "many" StackTab : mSortedPriorityArray
+Stack --> StackAnimation : mStackAnimationFactory
+
+class StackTab
+StackTab --> LayoutTab : mLayoutTab
+
+class StackAnimation {
+  StackAnimation createAnimationFactory(stack, width, height, ..., orientation)
+  ChromeAnimation createAnimatorSetForType(animationType, tabs)
+}
+StackAnimation <|-- StackAnimationPortrait
+StackAnimation <|-- StackAnimationLandscape
+
+
+Layout <|-- SimpleAnimationLayout
+
+SceneLayer <|-- StaticTabSceneLayer
+SceneLayer <|-- SceneOverlayLayer
+SceneOverlayLayer <|-- ContextualSearchSceneLayer
+SceneOverlayLayer <|-- ToolbarSceneLayer
+SceneOverlayLayer <|-- TabStripeSceneLayer
+SceneOverlayLayer <|-- ScrollingBottomViewSceneLayer
+
+SceneOverlay <|.. ToolbarSceneLayer
+SceneOverlay <|.. ScrollingBottomViewSceneLayer
+
+class SceneLayer << jni >>
+class StaticTabSceneLayer << jni >>
+abstract class SceneOverlayLayer {
+  {abstract} setContentTree(SceneLayer contentTree)
+}
+
+class ContextualSearchSceneLayer << jni >>
+class ToolbarSceneLayer << jni >>
+class TabStripeSceneLayer << jni >>
+class ScrollingBottomViewSceneLayer << jni >>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class Tab {
+  void addObserver(TabObserver)
+}
+Tab --> TabObserver
+
+interface TabObserver {
+  void onShown(Tab tab)
+  void onHidden(Tab tab)
+  void onContentChanged(Tab tab)
+  void onLoadUrl(Tab tab, LoadUrlParams params, int loadType)
+}
+
+TabObserver <|.. EmptyTabModelObserver
+EmptyTabModelObserver <|-- TabModelSelectorTabObserver
+TabModelSelector ..> TabModelSelectorTabObserver: mTabModelSelectorTabObserver
+
+interface TabList {
+  boolean isIncognito()
+  int index()
+  int getCount()
+  Tab getTabAt(int index)
+  indexOf(Tab tab)
+}
+TabList --> Tab
+
+TabList <|-- TabModel
+interface TabModel {
+  boolean closeTab(Tab tab)
+  void addTab()
+  void removeTab()
+  void addObserver(TabModelObserver observer)
+}
+TabModel --> TabModelObserver
+interface TabModelObserver {
+  void didSelectTab(Tab tab, TabSelectionType type, int lastId)
+  void willCloseTab)tab tab, boolean animate)
+  void didCloseTab(int tabId, boolean incognito)
+  void willAddtab(Tab tab, TabLaunchTape type)
+}
+
+TabModel <|.. TabModelJniBridge
+abstract class TabModelJniBridge {
+  TabCreator getTabCreator(boolean incognito)
+}
+TabModelJniBridge --> TabCreator
+
+TabModelJniBridge <|-- TabModelImpl
+class TabModelImpl {
+  TabCreator getTabCreator(boolean incognito)
+  void addObserver(TabModelObserver observer)
+}
+TabModelImpl o..> TabCreator: mRegularTabCreator, mIncognitoTabCreator
+
+TabModel <|.. IncognitoTabModel
+IncognitoTabModel --> TabModel: mDelegateModel
+
+
+TabModelSelector <|.. TabModelSelectorBase
+abstract class TabModelSelectorBase
+TabModelSelectorBase <|-- TabModelSelectorImpl
+TabModelSelectorImpl ..> TabModelImpl: normlModel, incognitoModel
+
+interface TabModelSelector {
+  void selectModel(boolean incognito)
+  TabModel getModel(boolean incognito)
+  List<TabModel> getModels()
+  TabModel getModelAt(int index)
+  TabModel getCurrentModel()
+  Tab getCurrentTab()
+  int getCurrentTabId()
+}
+TabModelSelector o--> TabModel
+
+
+interface TabModelObserver
+
+
+
+/'
+interface OverViewModeObserver {
+  void onOverviewModeStartedShowing(boolean showToolbar);
+  void onOverviewModeFinishedShowing();
+  void onOverviewModeStartedHiding(boolean showToolbar, boolean delayAnimation);
+  void onOverviewModeFinishedHiding();
+}
+OverViewModeObserver<|.. ChromeTabbedActivity
+'/
+
+class ChromeActivity {
+  TabModelSelector getTabModelSelector()
+}
+ChromeActivity --> TabModelSelector
+
+ChromeActivity <|-- ChromeTabbedActivity
+class ChromeTabbedActivity {
+  TabModelSelector createTabModelSelector()
+  TabModelSelector getTabModelSelector()
+}
+ChromeTabbedActivity ..> TabModelSelectorImpl: mTabModelSelectorImpl
+ChromeTabbedActivity ..> FullPageOpenTabManager
+ChromeTabbedActivity ..> LayoutManagerChrome
+
+class ChromeTabCreator
+ChromeTabCreator <|-- TabbedModeTabCreator
+
+interface TabModelSelectorObserver {
+  void onChange()
+  void onNewTabCreated(Tab tab)
+  void onTabModelSelected(TabModel newModel, TabModel oldModel)
+  void onTabStateInitialized()
+}
+TabModelSelectorObserver <|.. EmptyTabModelSelectorObserver
+
+
+/'--Whale Stuffs--'/
+Fragment <|-- FullPageOpenTab
+FullPageOpenTab ..> FullPageOpenTabView
+FullPageOpenTabView o--> ScrollCard: mScrollCards
+
+class FullPageOpenTabManager {
+  void showFullPageOpenTab()
+  void closeFullPageOpenTab()
+}
+FullPageOpenTabManager ..> FullPageOpenTab
+FullPageOpenTabManager --> TabModelSelector
+
+@enduml
+
+
+
+class_diagram
+</details>
